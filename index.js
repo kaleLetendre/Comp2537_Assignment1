@@ -256,17 +256,15 @@ app.get('/loggedin', (req,res) => {
 });
 
 app.get('/logout', (req,res) => {
-	req.session.destroy();
+	// delete all the cookies
+    req.session.destroy();
+
     res.redirect('/');
 });
 
 app.use(express.static(__dirname + "/public"));
 
 app.get("*", function(req, res) {
-    res.redirect("/does_not_exist");
-});
-
-app.get('/does_not_exist', (req,res) => {
     res.status(404);
     var html = `
             <style type="text/css">
