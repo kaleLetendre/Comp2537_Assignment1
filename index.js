@@ -36,8 +36,11 @@ var mongoStore = MongoStore.create({
     mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/sessions`,
 	crypto: {
 		secret: mongodb_session_secret
-	}
+	},
+    ttl: expireTime / 1000, // will expire after 1 hour automatically
 })
+
+
 
 app.use(session({ 
     secret: node_session_secret,
@@ -56,7 +59,7 @@ app.get('/', (req,res) => {
     }
     else {
         // get username from database
-        var html = `<h1>Welcome ${req.session.username}</h1>
+        var html = `<h1>Welcome</h1>
         <a href='/members'>members</a><br>
         <a href='/logout'>sign out</a><br>
         `;
@@ -257,30 +260,8 @@ app.get('/logout', (req,res) => {
     res.redirect('/');
 });
 
-
-app.get('/cat/:id', (req,res) => {
-
-    var cat = req.params.id;
-
-    if (cat == 1) {
-        res.send("Fluffy: <img src='/fluffy.gif' style='width:250px;'>");
-    }
-    else if (cat == 2) {
-        res.send("Socks: <img src='/socks.gif' style='width:250px;'>");
-    }
-    else {
-        res.send("Invalid cat id: "+cat);
-    }
-});
-
-
 app.use(express.static(__dirname + "/public"));
 
-// app.get("*", (req,res) => {
-// 	res.status(404);
-// 	res.send("Page not found - 404");
-// })
-// 404 page
 app.get("*", function(req, res) {
     res.redirect("/does_not_exist");
 });
