@@ -36,8 +36,7 @@ var mongoStore = MongoStore.create({
     mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/sessions`,
 	crypto: {
 		secret: mongodb_session_secret
-	},
-    ttl: expireTime / 1000, // will expire after 1 hour automatically
+	}
 })
 
 
@@ -206,8 +205,10 @@ app.post('/submitUser', async (req,res) => {
 	await userCollection.insertOne({username: username, email: email, password: hashedPassword});
 	console.log("Inserted user");
 
-    var html = "successfully created user";
-    res.send(html);
+    req.session.authenticated = true;
+    req.session.email = email;
+    req.session.cookie.maxAge = expireTime;
+    res.redirect('/');
 });
 
 app.post('/loggingin', async (req,res) => {
