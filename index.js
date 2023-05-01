@@ -48,9 +48,21 @@ app.use(session({
 ));
 
 app.get('/', (req,res) => {
-    res.redirect('/home');
+    if (!req.session.authenticated) {
+        var html = `<h1>Welcome</h1>
+        <a href='/createUser'>sign up</a><br>
+        <a href='/login'>login</a><br>
+        `;
+    }
+    else {
+        // get username from database
+        var html = `<h1>Welcome ${req.session.username}</h1>
+        <a href='/members'>members</a><br>
+        <a href='/logout'>sign out</a><br>
+        `;
+    }
+    res.send(html);
 });
-
 app.get('/nosql-injection', async (req,res) => {
 	var username = req.query.user;
 
@@ -86,30 +98,18 @@ app.get('/about', (req,res) => {
 
     res.send("<h1 style='color:"+color+";'>Kale Letendre</h1>");
 });
-app.get('/home', (req,res) => {
-    if (!req.session.authenticated) {
-        var html = `<h1>Welcome</h1>
-        <a href='/createUser'>sign up</a><br>
-        <a href='/login'>login</a><br>
-        `;
-    }
-    else {
-        var html = `<h1>Welcome ${req.session.username}</h1>
-        <a href='/members'>members</a><br>
-        <a href='/logout'>sign out</a><br>
-        `;
-    }
-    res.send(html);
-});
+
 app.get('/members', (req,res) => {
     if (!req.session.authenticated) {
-        res.redirect('/home');
+        res.redirect('/');
     }
     else {
         // random number between 1 and 10
         var randomNumber = Math.floor(Math.random() * 3) + 1;
         var html = `<h1>check out this secret information</h1>
-        <a href='/home'>home</a><br>
+        <a href='/'>home</a>
+        <a href='/logout'>sign out</a>
+        <br>
         <img src='/fluffy${randomNumber}.gif' style='width: 300px;'>`;
         res.send(html);
     }
@@ -146,10 +146,14 @@ app.get('/createUser', (req,res) => {
     create user
     <form action='/submitUser' method='post'>
     <input name='username' type='text' placeholder='username'>
+    <input name='email' type='email' placeholder='email'>
     <input name='password' type='password' placeholder='password'>
     <button>Submit</button>
     </form>
     `;
+    if (req.query.exists) {
+        html += "<br> username or email already exists";
+    }
     res.send(html);
 });
 
@@ -157,34 +161,46 @@ app.get('/login', (req,res) => {
     var html = `
     log in
     <form action='/loggingin' method='post'>
-    <input name='username' type='text' placeholder='username'>
+    <input name='email' type='email' placeholder='email'>
     <input name='password' type='password' placeholder='password'>
     <button>Submit</button>
     </form>
     `;
+    if (req.query.failed) {
+        html += "<br> login failed";
+    }
     res.send(html);
 });
 
 app.post('/submitUser', async (req,res) => {
     var username = req.body.username;
     var password = req.body.password;
+    var email = req.body.email;
 
 	const schema = Joi.object(
 		{
 			username: Joi.string().alphanum().max(20).required(),
-			password: Joi.string().max(20).required()
+			password: Joi.string().max(20).required(),
+            email: Joi.string().email().required()
 		});
 	
-	const validationResult = schema.validate({username, password});
+	const validationResult = schema.validate({email, username, password});
 	if (validationResult.error != null) {
 	   console.log(validationResult.error);
 	   res.redirect("/createUser");
 	   return;
    }
 
+    // check if username or email already exists
+    const result = await userCollection.find({$or: [{username: username}, {email: email}]}).toArray();
+    if (result.length > 0) {
+        res.redirect('/createUser?exists=1');
+        return;
+    }
+    
     var hashedPassword = await bcrypt.hash(password, saltRounds);
 	
-	await userCollection.insertOne({username: username, password: hashedPassword});
+	await userCollection.insertOne({username: username, email: email, password: hashedPassword});
 	console.log("Inserted user");
 
     var html = "successfully created user";
@@ -192,37 +208,37 @@ app.post('/submitUser', async (req,res) => {
 });
 
 app.post('/loggingin', async (req,res) => {
-    var username = req.body.username;
+    var email = req.body.email;
     var password = req.body.password;
 
 	const schema = Joi.string().max(20).required();
-	const validationResult = schema.validate(username);
+	const validationResult = schema.validate(email);
 	if (validationResult.error != null) {
 	   console.log(validationResult.error);
-	   res.redirect("/login");
+	   res.redirect("/login?failed=1");
 	   return;
 	}
 
-	const result = await userCollection.find({username: username}).project({username: 1, password: 1, _id: 1}).toArray();
+	const result = await userCollection.find({email: email}).project({email: 1, password: 1, _id: 1}).toArray();
+    // get the username associated with the email
+    req.session.username = result[0].username;
 
 	console.log(result);
 	if (result.length != 1) {
-		console.log("user not found");
-		res.redirect("/login");
+        res.redirect("/login?failed=1");
 		return;
 	}
 	if (await bcrypt.compare(password, result[0].password)) {
 		console.log("correct password");
 		req.session.authenticated = true;
-		req.session.username = username;
+		req.session.email = email;
 		req.session.cookie.maxAge = expireTime;
 
-		res.redirect('/home');
+		res.redirect('/');
 		return;
 	}
 	else {
-		console.log("incorrect password");
-		res.redirect("/login");
+		res.redirect("/login?failed=1")
 		return;
 	}
 });
@@ -238,7 +254,7 @@ app.get('/loggedin', (req,res) => {
 
 app.get('/logout', (req,res) => {
 	req.session.destroy();
-    res.redirect('/home');
+    res.redirect('/');
 });
 
 
@@ -266,6 +282,10 @@ app.use(express.static(__dirname + "/public"));
 // })
 // 404 page
 app.get("*", function(req, res) {
+    res.redirect("/does_not_exist");
+});
+
+app.get('/does_not_exist', (req,res) => {
     res.status(404);
     var html = `
             <style type="text/css">
