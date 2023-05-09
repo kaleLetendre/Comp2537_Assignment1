@@ -1,0 +1,13 @@
+<li class="list-group-item">
+    <!-- check if privilage is 0 -->
+    <% if (!user.privilage) { %>
+        <!-- if so, display username -->
+        <h4><%= user.username %>(User)
+    <% } else { %>
+        <!-- if not, display username and privilage -->
+        <h4 display="inline-block" ><%= user.username %>(Admin)
+    <% } %>
+
+    <a class="btn btn-danger" href="/promote?email=<%= user.email %>" role="button">Promote to Admin</a>
+    <a class="btn btn-success" href="/demote?email=<%= user.email %>" role="button">Demote to User</a>
+</li>

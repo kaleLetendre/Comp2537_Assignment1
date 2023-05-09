@@ -1,0 +1,26 @@
+<%- include("templates/header") %>
+
+
+<% if (!authenticated) { %>
+    <!-- centered -->
+<h1 class="text-center">Welcome!</h1>
+<div class="text-center">
+    <a class="btn btn-primary" href="/createUser" role="button">Sign Up</a>
+    <a class="btn btn-primary" href="/login?failed=0" role="button">Login</a>
+</div>
+
+
+<% } else { %>
+<% // get username from database %>
+
+<h1 class="text-center">Welcome <%= username %>!</h1>
+<div class="text-center">
+    <a class="btn btn-primary" href="/members" role="button">Memebrs</a>
+    <a class="btn btn-primary" href="/admin" role="button">Admin</a>
+    <a class="btn btn-primary" href="/logout" role="button">Sign Out</a>
+</div>
+<% } %>
+
+  
+<%- include("templates/footer") %>
+

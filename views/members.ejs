@@ -1,0 +1,27 @@
+<%- include("templates/header") %>
+<% if (!authenticated) { %>
+    <%res.redirect('/');%>
+<%}%>
+<%var randomNumber = Math.floor(Math.random() * 3) + 1;%>
+<h1 class="text-center">secret info</h1>
+<div class="text-center">
+    <a class="btn btn-primary" href="/" role="button">Home</a>
+    <a class="btn btn-primary" href="/logout" role="button">Sign Out</a>
+</div>
+<!-- Instead of providing the user with a random image (1 of 3), display all 3 images in a Bootstrap
+responsive grid. -->
+<br>
+<div class="text-center">
+    <div class="row">
+        <div class="col-sm-4">
+            <img src="/fluffy1.gif" alt="fluffy1" width="300" height="300">
+        </div>
+        <div class="col-sm-4">
+            <img src="/fluffy2.gif" alt="fluffy2" width="300" height="300">
+        </div>
+        <div class="col-sm-4">
+            <img src="/fluffy3.gif" alt="fluffy3" width="300" height="300">
+        </div>
+    </div>
+</div>
+<%- include("templates/footer") %>

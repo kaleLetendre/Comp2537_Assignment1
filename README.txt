@@ -76,7 +76,6 @@ I've chosen to store these sessions (the server side info) in a mongodb database
 but there are other ways to do this as well, MySQL, MS SQL, Redis, etc 
 (See documentation for details: https://www.npmjs.com/package/express-session#compatible-session-stores)
 
-
 I've set up a mongodb database for free on Atlas (https://www.mongodb.com/atlas/database)
 Once setup, you can access your mongodb via the connection string Atlas provides you
 ex: mongodb+srv://${mongodb_user}:${mongodb_password}@cluster0.ari8a.mongodb.net/${database_name}
